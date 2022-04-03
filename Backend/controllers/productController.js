@@ -4,11 +4,12 @@ const Product = require('../models/productModel');
 const ErrorHandler=require('../utils/errorhandler');
 const mongoose = require('mongoose');
 const ApiFeatures=require('../utils/apiFeatures');
+const {isAuthenticatedUser,authorizedRoles} = require('../middlewares/auth')
 
-router.get('/', async (req, res , next) => {
+router.get('/',isAuthenticatedUser, async (req, res , next) => {
 	try {
 		const resultPerPage = 5;
-		const productCount = await Product.countDocuments()
+		const productCount = await Product.countDocuments();
 		const ApiFeature = new ApiFeatures(Product.find(),req.query).search().filter().pagination(resultPerPage)
 		const products = await ApiFeature.query;
 
@@ -19,8 +20,10 @@ router.get('/', async (req, res , next) => {
 })
 
 
-router.post('/new', async (req, res, next) => {
+router.post('/new',isAuthenticatedUser, authorizedRoles("admin"), async (req, res, next) => {
 	try {
+		req.body.user = req.user.id;
+
 		const product = await Product.create(req.body);
 
 		if(!product){
@@ -54,7 +57,7 @@ router.get('/:id', async (req, res, next) => {
 	}
 })
 
-router.put('/:id', async (req, res,next) => {
+router.put('/:id',isAuthenticatedUser, authorizedRoles("admin"), async (req, res,next) => {
 	try {
 		//if(!mongoose.Types.ObjectId.isValid(req.params.id)){
 		//	return next(new ErrorHandler("Product not found",404));
@@ -70,7 +73,7 @@ router.put('/:id', async (req, res,next) => {
 	}
 })
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id',isAuthenticatedUser, authorizedRoles("admin"), async (req, res, next) => {
 	try{
 		let product = await Product.findById(req.params.id);
 
