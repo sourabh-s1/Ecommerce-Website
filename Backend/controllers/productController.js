@@ -3,12 +3,16 @@ const router = express.Router();
 const Product = require('../models/productModel');
 const ErrorHandler=require('../utils/errorhandler');
 const mongoose = require('mongoose');
+const ApiFeatures=require('../utils/apiFeatures');
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res , next) => {
 	try {
-		const products = await Product.find().lean().exec();
+		const resultPerPage = 5;
+		const productCount = await Product.countDocuments()
+		const ApiFeature = new ApiFeatures(Product.find(),req.query).search().filter().pagination(resultPerPage)
+		const products = await ApiFeature.query;
 
-		return res.status(200).send(products);
+		return res.status(200).json({success: true, products, productCount});
 	} catch (err) {
 		return next(new ErrorHandler(err,404));
 	}
@@ -55,7 +59,7 @@ router.put('/:id', async (req, res,next) => {
 		//if(!mongoose.Types.ObjectId.isValid(req.params.id)){
 		//	return next(new ErrorHandler("Product not found",404));
 		//}
-		
+
 		let product = await Product.findById(req.params.id)
 
 		product = await Product.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true, useFindAndModify: false});
