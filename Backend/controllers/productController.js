@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/productModel');
+const User = require('../models/userModel');
 const ErrorHandler=require('../utils/errorhandler');
 const mongoose = require('mongoose');
 const ApiFeatures=require('../utils/apiFeatures');
