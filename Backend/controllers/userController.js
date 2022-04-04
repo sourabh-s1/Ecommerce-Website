@@ -6,6 +6,7 @@ const User = require("../models/userModel");
 const sendToken = require("../utils/jwtToken");
 const sendEmail = require("../utils/sendEmail");
 const crypto = require("crypto");
+const { isAuthenticatedUser, authorizedRoles } = require("../middlewares/auth");
 
 //Create User
 router.post("/register", async (req, res, next) => {
@@ -108,7 +109,7 @@ router.post("/reset", async (req, res, next) => {
   }
 });
 
-//Redirected reset password link with jwtToken  
+//Redirected reset password link with jwtToken
 router.put("/reset/:token", async (req, res, next) => {
   try {
     const resetPasswordToken = crypto
@@ -141,10 +142,156 @@ router.put("/reset/:token", async (req, res, next) => {
 
     await user.save();
 
-    sendToken(user,200, res)
+    sendToken(user, 200, res);
   } catch (err) {
     return next(new ErrorHandler(err.message, 404));
   }
 });
 
+router.get("/me", isAuthenticatedUser, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 404));
+  }
+});
+
+//Update user password
+router.put("/password/update", isAuthenticatedUser, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select("+password");
+
+    const isPasswordMatch = await user.comparePassword(req.body.oldPassword);
+
+    //if password does not match
+    if (!isPasswordMatch) {
+      return next(new ErrorHandler("old password is incorrect", 400));
+    }
+
+    if (req.body.newPassword !== req.body.confirmPassword) {
+      return next(new ErrorHandler("Password mismatch", 400));
+    }
+
+    user.password = req.body.newPassword;
+
+    await user.save();
+    sendToken(user, 200, res);
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 404));
+  }
+});
+
+//update user profile
+router.put("/me/update", isAuthenticatedUser, async (req, res, next) => {
+  try {
+    const newUserData = {
+      name: req.body.name,
+      email: req.body.email,
+    };
+
+    //We will add cloudinary later
+
+    const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+      new: true,
+      runValidators: true,
+      useFindAndModify: false,
+    });
+
+    res.status(200).json({
+      success: true,
+    });
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 404));
+  }
+});
+
+
+//Get all users(Admin)
+router.get('/allusers', isAuthenticatedUser, authorizedRoles("admin"), async (req, res, next) => {
+  try {
+    const users = await User.find();
+
+    res.status(200).json({
+      success: true,
+      users,
+    })
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 404));
+  }
+})
+
+
+//get single user (Admin)
+router.get('/allusers/:id', isAuthenticatedUser, authorizedRoles("admin"), async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if(user == null) {
+      return next(new ErrorHandler(`User not found with id ${req.params.id}`,400))
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    })
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 404));
+  }
+})
+
+
+//To update user (Admin)
+router.put("/update/:id", isAuthenticatedUser, async (req, res, next) => {
+  try {
+    const newUserData = {
+      name: req.body.name,
+      email: req.body.email,
+      role: req.body.role
+    };
+
+    //We will add cloudinary later
+
+    const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
+      new: true,
+      runValidators: true,
+      useFindAndModify: false,
+    });
+
+    if(user == null) {
+      return next(new ErrorHandler(`User not found with id ${req.params.id}`,400))
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User update successfully!"
+    });
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 404));
+  }
+});
+
+
+//Delete user (Admin)
+router.delete("/delete/:id", isAuthenticatedUser, async (req, res, next) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id)
+
+    if(user == null) {
+      return next(new ErrorHandler(`User not found with id ${req.params.id}`,400))
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+      message: 'User deleted successfully!'
+    });
+  } catch (err) {
+    return next(new ErrorHandler(err.message, 404));
+  }
+});
 module.exports = router;
