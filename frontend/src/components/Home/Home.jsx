@@ -1,36 +1,65 @@
-import React from 'react'
-import {CgMouse} from 'react-icons/cg'
-import {useEffect,useState} from 'react'
-import './Home.css'
-import Product from './Product.jsx'
-
-const product = {
-  name: 'Blue Shirt',
-  images: [{url: 'https://i.ibb.co/DRST11n/1.webp'}],
-  price: "$3000",
-  _id: 'product-1',
-}
+import React, { Fragment } from "react";
+import { CgMouse } from "react-icons/cg";
+import { useEffect, useState } from "react";
+import "./Home.css";
+import Product from "./Product.jsx";
+import MetaData from "../layouts/MetaData";
+import { getProducts, clearErrors } from "../../redux/actions/productAction";
+import { useSelector, useDispatch } from "react-redux";
+import Loading from "../layouts/Loading/Loading";
+import { useAlert } from "react-alert";
 
 function Home() {
 
-  return <>
-    <div className="banner" data-aos="zoom-out" data-aos-duration="2000">
-      <h1>Welcome to ShoppersSpot</h1>
-      <p>Find amazing products below</p>
+  const alert = useAlert();
+  const dispatch = useDispatch();
+  const { loading, error, products, productsCount } = useSelector(
+    (state) => state.products
+  );
 
-      <a href="#container">
-        <button >
-          Scroll <CgMouse/>
-        </button>
-      </a>
-    </div>
+  console.log(products);
+  useEffect(() => {
 
-    <h2 className="homeHeading">Featured Products</h2>
+    if(error){
+      return alert.error(error);
+    }
 
-    <div className="container" id="container">
-      <Product product={product}/>
-    </div>
-  </>
+    dispatch(getProducts());
+  }, [dispatch, error , alert]);
+
+  return (
+    <Fragment>
+      {loading ? (
+        <Loading />
+      ) : (
+        <Fragment>
+          <MetaData title="ShoppersSpot" />
+
+          <div className="banner" data-aos="zoom-out" data-aos-duration="2000">
+            <h1>Welcome to ShoppersSpot</h1>
+            <p style={{ marginBottom: "1vmax", fontFamily: "poppins" }}>
+              Find amazing products below
+            </p>
+
+            <a href="#container">
+              <button>
+                Scroll <CgMouse />
+              </button>
+            </a>
+          </div>
+
+          <h2 className="homeHeading">Featured Products</h2>
+
+          <div className="container" id="container">
+            {products &&
+              products.map((product) => (
+                <Product key={product._id} product={product} />
+              ))}
+          </div>
+        </Fragment>
+      )}
+    </Fragment>
+  );
 }
 
-export default Home
+export default Home;

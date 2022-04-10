@@ -9,12 +9,12 @@ const {isAuthenticatedUser,authorizedRoles} = require('../middlewares/auth')
 
 router.get('/',isAuthenticatedUser, async (req, res , next) => {
 	try {
-		const resultPerPage = 5;
-		const productCount = await Product.countDocuments();
+		const resultPerPage = 8;
+		const productsCount = await Product.countDocuments();
 		const ApiFeature = new ApiFeatures(Product.find(),req.query).search().filter().pagination(resultPerPage)
 		const products = await ApiFeature.query;
 
-		return res.status(200).json({success: true, products, productCount});
+		return res.status(200).json({success: true, products, productsCount});
 	} catch (err) {
 		return next(new ErrorHandler(err,404));
 	}

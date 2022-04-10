@@ -11,9 +11,9 @@ const errorMiddleware = require('./middlewares/error');
 app.use(express.json());
 app.use(cookieParser());
 
-app.use('/products', productController);
-app.use('/user',userController);
-app.use('/order', orderController);
+app.use('/api/products', productController);
+app.use('/api/user',userController);
+app.use('/api/order', orderController);
 
 app.use(errorMiddleware);
 
